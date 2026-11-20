@@ -1,6 +1,6 @@
 # OrbitBar
 
-**给你的 macOS 菜单栏装上多平台 AI 额度同心双环表盘。**
+**macOS 顶栏多平台 AI 用量同心双环表盘（Dual-Ring AI Usage Bar）。**
 
 *外圈 = 周 / 30 天剩余额度 · 内圈 = 5 小时短窗剩余额度 —— 统一覆盖 Claude、Gemini / Antigravity、Codex、Kimi Code、GLM、Grok、Devin 等多模型订阅。*
 
@@ -51,7 +51,7 @@ make install
 ./Scripts/install.sh --app /path/to/CodexBar.app
 ```
 
-安装脚本会自动完成：按宿主架构编译 `OrbitBar.dylib` → 备份原二进制为 `CodexBar.orbitbar-backup` → 弱链接并 ad-hoc 重签名校验 → 重启菜单栏应用。
+安装脚本会自动完成：按宿主架构编译 `OrbitBar.dylib` → 备份原二进制至 `~/Library/Application Support/OrbitBar/CodexBar.orbitbar-backup` → 弱链接并 ad-hoc 重签名校验 → 重启菜单栏应用。
 
 > **关于本地重签名说明**：由于修改 `.app` 包内容会替换原有签名，脚本会对本机副本进行 ad-hoc 签名；若原版为 Developer ID 签名版本，首次重启后系统可能会弹出一次钥匙串访问确认。
 

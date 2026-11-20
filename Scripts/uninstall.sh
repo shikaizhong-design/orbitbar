@@ -31,7 +31,8 @@ if [[ -z "$APP_PATH" ]]; then
 fi
 
 EXEC_PATH="$APP_PATH/Contents/MacOS/CodexBar"
-BACKUP_BIN="$APP_PATH/Contents/MacOS/CodexBar.orbitbar-backup"
+BACKUP_BIN="$HOME/Library/Application Support/OrbitBar/CodexBar.orbitbar-backup"
+LEGACY_BACKUP_BIN="$APP_PATH/Contents/MacOS/CodexBar.orbitbar-backup"
 DYLIB_PATH="$APP_PATH/Contents/Frameworks/OrbitBar.dylib"
 
 pkill -x CodexBar 2>/dev/null || true
@@ -40,7 +41,11 @@ sleep 0.4
 if [[ -f "$BACKUP_BIN" ]]; then
   mv -f "$BACKUP_BIN" "$EXEC_PATH"
   echo "Restored original executable from backup."
+elif [[ -f "$LEGACY_BACKUP_BIN" ]]; then
+  mv -f "$LEGACY_BACKUP_BIN" "$EXEC_PATH"
+  echo "Restored original executable from legacy backup."
 fi
+rm -f "$LEGACY_BACKUP_BIN"
 
 if [[ -f "$DYLIB_PATH" ]]; then
   rm -f "$DYLIB_PATH"

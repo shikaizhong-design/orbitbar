@@ -1,6 +1,6 @@
 # OrbitBar
 
-**Concentric dual-ring AI quota gauges for your macOS menu bar.**
+**Dual-Ring AI Usage Bar for macOS.**
 
 *Outer orbit = Weekly / 30-day remaining quota · Inner orbit = 5-hour session remaining quota — across Claude, Gemini/Antigravity, Codex, Kimi Code, GLM, Grok, Devin, and more.*
 
@@ -56,7 +56,7 @@ Or specify a custom app bundle path:
 
 What `install.sh` does:
 1. Compiles `OrbitBar.dylib` matching the host app's architecture(s) (`arm64` / Universal).
-2. Saves an untouched backup of the original executable at `Contents/MacOS/CodexBar.orbitbar-backup`.
+2. Saves an untouched backup of the original executable at `~/Library/Application Support/OrbitBar/CodexBar.orbitbar-backup`.
 3. Installs `OrbitBar.dylib` into `Contents/Frameworks/` and appends a weak `LC_LOAD_WEAK_DYLIB` entry (`@rpath/OrbitBar.dylib`).
 4. Ad-hoc re-signs the app bundle (`codesign --force --sign -`), verifies `codesign --verify --deep --strict`, and restarts the menu bar app.
 

@@ -40,7 +40,8 @@ fi
 
 EXEC_PATH="$APP_PATH/Contents/MacOS/CodexBar"
 FRAMEWORKS_DIR="$APP_PATH/Contents/Frameworks"
-BACKUP_BIN="$APP_PATH/Contents/MacOS/CodexBar.orbitbar-backup"
+BACKUP_DIR="$HOME/Library/Application Support/OrbitBar"
+BACKUP_BIN="$BACKUP_DIR/CodexBar.orbitbar-backup"
 DYLIB_NAME="OrbitBar.dylib"
 DYLIB_INSTALL_NAME="@rpath/$DYLIB_NAME"
 
@@ -87,7 +88,8 @@ if [[ "$SKIP_RESTART" -eq 0 ]]; then
   sleep 0.4
 fi
 
-mkdir -p "$FRAMEWORKS_DIR"
+mkdir -p "$FRAMEWORKS_DIR" "$BACKUP_DIR"
+rm -f "$APP_PATH/Contents/MacOS/CodexBar.orbitbar-backup"
 if [[ ! -f "$BACKUP_BIN" ]]; then
   cp -p "$EXEC_PATH" "$BACKUP_BIN"
 fi

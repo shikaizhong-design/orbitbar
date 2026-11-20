@@ -33,6 +33,36 @@ enum MenuBarIconStyle: String {
     }
 }
 
+private enum OrbitMeta {
+    static let version = "0.1.0"
+
+    static func rewriteAboutTitleIfNeeded(_ title: String) -> String? {
+        guard !title.contains("OrbitBar") else { return nil }
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let prefix: String
+        if trimmed.hasPrefix("About CodexBar") {
+            prefix = "About"
+        } else if trimmed.hasPrefix("关于 CodexBar") {
+            prefix = "关于"
+        } else {
+            return nil
+        }
+
+        // Extract host version like "(v0.84.1)" -> "v0.84.1" if present
+        if let open = trimmed.firstIndex(of: "("),
+           let close = trimmed.lastIndex(of: ")"),
+           open < close
+        {
+            let hostVer = trimmed[trimmed.index(after: open)..<close]
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !hostVer.isEmpty {
+                return "\(prefix) OrbitBar v\(Self.version) · CodexBar \(hostVer)"
+            }
+        }
+        return "\(prefix) OrbitBar v\(Self.version) · CodexBar"
+    }
+}
+
 private enum OrbitLocale {
     static var isChinese: Bool {
         Locale.preferredLanguages.first?.lowercased().hasPrefix("zh") == true
@@ -40,7 +70,6 @@ private enum OrbitLocale {
 
     static var outerLegend: String { isChinese ? "外圈 周额度" : "Outer Weekly" }
     static var innerLegend: String { isChinese ? "内圈 5小时" : "Inner 5h" }
-    static var overviewTip: String { isChinese ? "全部账号总览 · 外圈周额度 / 内圈5小时" : "Overview · Outer Weekly / Inner 5h" }
     static var noShortLimit: String { isChinese ? "无 5h 限" : "Single window" }
     static var defaultWeekly: String { isChinese ? "周" : "Weekly" }
     static var defaultShort: String { isChinese ? "5 小时" : "5h" }
@@ -849,9 +878,21 @@ final class OrbitBarController {
             forName: NSMenu.didBeginTrackingNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
+        ) { [weak self] note in
+            let menu = note.object as? NSMenu
             MainActor.assumeIsolated {
+                if let menu {
+                    Self.rewriteAboutItems(in: menu)
+                }
                 self?.refreshAll(reloadJSON: true)
+            }
+        }
+    }
+
+    static func rewriteAboutItems(in menu: NSMenu) {
+        for item in menu.items {
+            if let rewritten = OrbitMeta.rewriteAboutTitleIfNeeded(item.title) {
+                item.title = rewritten
             }
         }
     }
@@ -1098,7 +1139,7 @@ final class OrbitBarController {
                 glyph: originalGlyph,
                 isSelected: isSelected,
                 isDark: isDark)
-            button.toolTip = OrbitLocale.overviewTip
+            button.toolTip = nil
         } else {
             let data = QuotaSnapshotStore.shared.ringData(forTitle: title)
             let fallbackWk = data == nil ? self.fallbackWeeklyPercent(fromHiddenIndicatorIn: button) : nil
@@ -1120,9 +1161,45 @@ private nonisolated(unsafe) var gOrigStatusButtonSetImage: (@convention(c) (NSBu
 private enum OrbitSwizzler {
     static func install() {
         Self.swizzleStatusBarButton()
+        Self.swizzleMenuItemAboutTitle()
         Self.swizzleMenuItemSetView()
         Self.swizzleProviderSwitcherView()
         Self.swizzleStackedToggleButton()
+    }
+
+    private static func swizzleMenuItemAboutTitle() {
+        // Rewrite "About CodexBar (vX.Y.Z)" -> "About OrbitBar v0.1.0 · CodexBar vX.Y.Z"
+        // before NSMenu measures menu item width.
+        let itemCls: AnyClass = NSMenuItem.self
+        let titleSel = #selector(setter: NSMenuItem.title)
+        if let m = class_getInstanceMethod(itemCls, titleSel) {
+            let origIMP = method_getImplementation(m)
+            typealias TitleFn = @convention(c) (AnyObject, Selector, NSString) -> Void
+            let orig = unsafeBitCast(origIMP, to: TitleFn.self)
+            let block: @convention(block) (AnyObject, NSString) -> Void = { obj, incoming in
+                if let rewritten = OrbitMeta.rewriteAboutTitleIfNeeded(incoming as String) {
+                    orig(obj, titleSel, rewritten as NSString)
+                } else {
+                    orig(obj, titleSel, incoming)
+                }
+            }
+            method_setImplementation(m, imp_implementationWithBlock(block))
+        }
+
+        let menuCls: AnyClass = NSMenu.self
+        let insertSel = #selector(NSMenu.insertItem(_:at:))
+        if let m = class_getInstanceMethod(menuCls, insertSel) {
+            let origIMP = method_getImplementation(m)
+            typealias InsertFn = @convention(c) (AnyObject, Selector, NSMenuItem, Int) -> Void
+            let orig = unsafeBitCast(origIMP, to: InsertFn.self)
+            let block: @convention(block) (AnyObject, NSMenuItem, Int) -> Void = { menu, item, idx in
+                if let rewritten = OrbitMeta.rewriteAboutTitleIfNeeded(item.title) {
+                    item.title = rewritten
+                }
+                orig(menu, insertSel, item, idx)
+            }
+            method_setImplementation(m, imp_implementationWithBlock(block))
+        }
     }
 
     private static func swizzleStatusBarButton() {
